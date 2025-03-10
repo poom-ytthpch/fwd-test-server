@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum PaymentFrequency {
+  YEARLY
+  HALFYEARLY
+  QUARTERLY
+  MONTHLY
+}
+
+model Plan {
+  id            String          @id @default(uuid())
+  planCode      String          @unique
+  packageName   String
+  benefit       String
+  InsurancePlan InsurancePlan[]
+}
+
+model InsurancePlan {
+  id                 String   @id @default(uuid())
+  plan               Plan     @relation(references: [planCode], fields: [planCode])
+  planCode           String
+  baseSumAssured     Int
+  baseAnnualPremium  Int
+  modalPremium       Int
+  productTerm        Int
+  premiumPayingTerm  Int
+  paymentFrequencyCd String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
