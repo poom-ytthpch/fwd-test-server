@@ -1,4 +1,4 @@
-import { Plan } from "../types";
+import { Plan, PremiumCalculationRequest } from "../types";
 import axios from "axios";
 import ioredis from "ioredis";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -12,7 +12,7 @@ export class ProductsService {
   }
 
   async getProducts(): Promise<Plan[]> {
-    const url = process.env.PRODUCT_URL || undefined;
+    const url = process.env.BASE_URL + "/getProducts" || undefined;
 
     if (!url) {
       return [];
@@ -48,7 +48,16 @@ export class ProductsService {
     }
   }
 
-  async upsertPlan(plans: Plan[]): Promise<Plan[]> {
+  async premiumCalculate(input: PremiumCalculationRequest) {
+    const url = process.env.BASE_URL + "/premium-calculation" || undefined;
+
+    console.log({ input });
+
+    // const {} = input
+
+  }
+
+   private async upsertPlan(plans: Plan[]): Promise<Plan[]> {
     let upserPlans = [];
 
     try {
