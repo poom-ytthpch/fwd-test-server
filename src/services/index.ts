@@ -1,4 +1,4 @@
-import { Plan, Products } from "../types";
+import { Plan } from "../types";
 import axios from "axios";
 import ioredis from "ioredis";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -11,32 +11,38 @@ export class ProductsService {
     this.repos = new PrismaService();
   }
 
-  async getProducts(): Promise<Products> {
-    const url = "https://fgt9jf-8080.csb.app/getProducts";
+  async getProducts(): Promise<Plan[]> {
+    const url = process.env.PRODUCT_URL || undefined;
+
+    if (!url) {
+      return [];
+    }
 
     const cacheKey = `cache:${url}`;
     const cacheTTL = 60 * 1;
 
-    const cachedData = await this.redis.get(cacheKey);
-
-    if (cachedData) {
-      console.log("Data from cache");
-      return JSON.parse(cachedData);
-    }
-
     try {
+      const cachedData = await this.redis.get(cacheKey);
+
+      if (cachedData) {
+        console.log("Data from cache");
+        return JSON.parse(cachedData);
+      }
+
       const plans = await axios.get(url).then((response) => {
-        console.log({ response: response.data });
-        return response.data;
+        return response.data as Plan[];
       });
 
       const upserPlans = await this.upsertPlan(plans);
 
-      console.log({ upserPlans });
+      await this.redis.set(
+        cacheKey,
+        JSON.stringify(upserPlans),
+        "EX",
+        cacheTTL
+      );
 
-      await this.redis.set(cacheKey, JSON.stringify(upserPlans), "EX", cacheTTL);
-
-      return plans;
+      return upserPlans;
     } catch (error) {
       throw error;
     }
