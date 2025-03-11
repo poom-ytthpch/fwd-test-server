@@ -6,15 +6,26 @@ import {
   PremiumCalculationResponse,
 } from "../types";
 import axios, { HttpStatusCode } from "axios";
-import ioredis from "ioredis";
 import { PrismaService } from "../common/prisma/prisma.service";
-import { response } from "express";
+import { createClient } from "redis";
+
+const client = createClient({
+  url: "redis://fwd-redis:6379",
+});
 export class ProductsService {
-  private readonly redis: ioredis;
+  private readonly redis;
   private readonly repos: PrismaService;
 
   constructor() {
-    this.redis = new ioredis();
+    this.redis = createClient({
+      url: `redis://${process.env.REDIS_HOST || "fwd-redis"}:${
+        process.env.REDIS_PORT || 6379
+      }`,
+    });
+
+    this.redis.on("error", (err) => console.error("Redis Client Error", err));
+
+    this.redis.connect(); // ต้องเรียก connect() ก่อนใช้งาน
     this.repos = new PrismaService();
   }
 
@@ -50,13 +61,7 @@ export class ProductsService {
 
       const upserPlans = await this.upsertPlan(plans);
 
-      await this.redis.set(
-        cacheKey,
-        JSON.stringify(upserPlans),
-        "EX",
-        cacheTTL
-      );
-
+      await this.redis.setEx(cacheKey, cacheTTL, JSON.stringify(upserPlans));
       return {
         plans: upserPlans,
         status: HttpStatusCode.Ok,
@@ -113,7 +118,6 @@ export class ProductsService {
           },
         });
 
-
         await this.redis.del("cache:insurancePlans");
 
         return {
@@ -152,10 +156,14 @@ export class ProductsService {
       const insurancePlans = await this.repos.insurancePlan.findMany({
         orderBy: {
           createdAt: "desc",
-        }
+        },
       });
 
-      await this.redis.set(cacheKey, JSON.stringify(insurancePlans), "EX", cacheTTL);
+      await this.redis.setEx(
+        cacheKey,
+        cacheTTL,
+        JSON.stringify(insurancePlans)
+      );
 
       return {
         insurancePlans: insurancePlans,
