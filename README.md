@@ -16,7 +16,7 @@
 `$ npm run jest:test`
 
 #### Build
-1. create database.env example below
+1. create database.env example below <br/>
 `POSTGRES_USER=user` <br/>
 `POSTGRES_PASSWORD=passwd` <br/>
 `POSTGRES_DB=fwd` <br/>
