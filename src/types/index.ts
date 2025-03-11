@@ -31,6 +31,7 @@ export type InsurancePlan = {
 };
 
 export type PremiumCalculationRequest = {
+  fullName: string;
   genderCd: Gender;
   dob: string;
   planCode: string;

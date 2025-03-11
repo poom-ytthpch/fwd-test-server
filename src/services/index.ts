@@ -99,8 +99,10 @@ export class ProductsService {
         const insurancePlan = await this.repos.insurancePlan.create({
           data: {
             ...calculation,
+            fullName: input?.fullName,
           },
           select: {
+            fullName: true,
             planCode: true,
             baseSumAssured: true,
             baseAnnualPremium: true,
@@ -110,6 +112,9 @@ export class ProductsService {
             paymentFrequencyCd: true,
           },
         });
+
+
+        await this.redis.del("cache:insurancePlans");
 
         return {
           insurancePlan: insurancePlan as unknown as InsurancePlan,
@@ -122,6 +127,44 @@ export class ProductsService {
     } catch (error) {
       return {
         insurancePlan: undefined,
+        status: HttpStatusCode.InternalServerError,
+        message: "Error:" + error,
+      };
+    }
+  }
+
+  async insurancePlans() {
+    const cacheKey = `cache:insurancePlans`;
+    const cacheTTL = 60 * 1;
+
+    const cachedData = await this.redis.get(cacheKey);
+
+    try {
+      if (cachedData) {
+        console.log("Data from cache");
+        return {
+          insurancePlans: JSON.parse(cachedData),
+          status: HttpStatusCode.Ok,
+          message: "Success",
+        };
+      }
+
+      const insurancePlans = await this.repos.insurancePlan.findMany({
+        orderBy: {
+          createdAt: "desc",
+        }
+      });
+
+      await this.redis.set(cacheKey, JSON.stringify(insurancePlans), "EX", cacheTTL);
+
+      return {
+        insurancePlans: insurancePlans,
+        status: HttpStatusCode.Ok,
+        message: "Success",
+      };
+    } catch (error) {
+      return {
+        insurancePlans: undefined,
         status: HttpStatusCode.InternalServerError,
         message: "Error:" + error,
       };

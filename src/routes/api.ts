@@ -4,10 +4,11 @@ import rateLimit from "express-rate-limit";
 
 import { ProductsService } from "../services";
 import { PremiumCalculationRequest } from "../types";
-
+import { premiumCalculationRequestValidate } from "../schema";
+import { HttpStatusCode } from "axios";
 const limiter = rateLimit({
   windowMs: 30 * 1000, // 30 seconds
-  max: 10,
+  max: 5,
   message: { message: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -27,15 +28,35 @@ routers.get("/products", async (req: Request, res: Response) => {
 
 routers.post(
   "/premium-calculation",
-  limiter,
+  [limiter],
   async (req: Request, res: Response) => {
-    const { insurancePlan, status, message } =
-      await productsService.premiumCalculate(req.body);
+    try {
+      const val = await premiumCalculationRequestValidate.validateAsync(
+        req.body
+      );
 
-    if (!insurancePlan) {
-      res.status(status).json({ message: message });
-      return;
+      const { insurancePlan, status, message } =
+        await productsService.premiumCalculate(val);
+
+      if (!insurancePlan) {
+        res.status(status).json({ message: message });
+        return;
+      }
+      res.status(status).json(insurancePlan);
+    } catch (error) {
+      console.log({ error });
+      res.status(HttpStatusCode.BadRequest).json(error);
     }
-    res.status(status).json(insurancePlan);
   }
 );
+
+routers.get("/insurancePlans", async (req: Request, res: Response) => {
+  const { insurancePlans, status, message } =
+    await productsService.insurancePlans();
+
+  if (!insurancePlans) {
+    res.status(status).json({ message: message });
+    return;
+  }
+  res.status(status).json(insurancePlans);
+});

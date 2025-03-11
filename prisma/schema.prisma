@@ -36,6 +36,7 @@ model Plan {
 model InsurancePlan {
   id                 String   @id @default(uuid())
   plan               Plan     @relation(references: [planCode], fields: [planCode])
+  fullName           String
   planCode           String
   baseSumAssured     Int
   baseAnnualPremium  Int
