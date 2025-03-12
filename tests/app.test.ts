@@ -3,7 +3,7 @@ import app from "../src";
 
 describe("Api Test", () => {
   it("should get products", async () => {
-    const res = await request(app).get("/v1/products"); // ✅ เปลี่ยนจาก .post() เป็น .get()
+    const res = await request(app).get("/v1/products");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -49,8 +49,8 @@ describe("Api Test", () => {
     });
   });
 
-  it("should get products", async () => {
-    const res = await request(app).get("/v1/insurancePlans"); // ✅ เปลี่ยนจาก .post() เป็น .get()
+  it("should get insurancePlans", async () => {
+    const res = await request(app).get("/v1/insurancePlans");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(

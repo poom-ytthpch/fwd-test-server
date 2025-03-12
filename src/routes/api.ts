@@ -1,4 +1,4 @@
-import Express, { Request, Response } from "express";
+import Express, { NextFunction, Request, Response } from "express";
 export const routers = Express.Router();
 import rateLimit from "express-rate-limit";
 
@@ -29,7 +29,7 @@ routers.get("/products", async (req: Request, res: Response) => {
 routers.post(
   "/premium-calculation",
   [limiter],
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const val = await premiumCalculationRequestValidate.validateAsync(
         req.body
@@ -38,9 +38,8 @@ routers.post(
       const { insurancePlan, status, message } =
         await productsService.premiumCalculate(val);
 
-      if (!insurancePlan) {
-        res.status(status).json({ message: message });
-        return;
+      if (status !== HttpStatusCode.Ok) {
+        throw new Error(message);
       }
       res.status(status).json(insurancePlan);
     } catch (error) {

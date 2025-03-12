@@ -25,7 +25,7 @@ export class ProductsService {
 
     this.redis.on("error", (err) => console.error("Redis Client Error", err));
 
-    this.redis.connect(); // ต้องเรียก connect() ก่อนใช้งาน
+    this.redis.connect();
     this.repos = new PrismaService();
   }
 
@@ -97,13 +97,37 @@ export class ProductsService {
           },
         })
         .then((response) => {
-          return response.data;
+          return {
+            data: response.data,
+            status: HttpStatusCode.Ok,
+            message: "success",
+          };
+        })
+        .catch((err) => {
+          return {
+            data: null,
+            status: HttpStatusCode.BadRequest,
+            message: err?.message,
+          };
         });
 
-      if (calculation) {
+      if (!calculation.data ) {
+        return calculation;
+      }
+
+      if(Object.keys(calculation?.data)?.length === 0)
+      {
+        return {
+          insurancePlan: undefined,
+          status: HttpStatusCode.NoContent,
+          message: "Something went worng",
+        };
+      }
+
+      if (calculation.data && Object.keys(calculation?.data)?.length > 0) {
         const insurancePlan = await this.repos.insurancePlan.create({
           data: {
-            ...calculation,
+            ...calculation.data,
             fullName: input?.fullName,
           },
           select: {
